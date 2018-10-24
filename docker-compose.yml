@@ -1,0 +1,14 @@
+version: "3.5"
+services:
+  app:
+    container_name: hashtag-service
+    build: .
+    ports:
+      - "5000:5000"
+    links:
+      - db
+    environment:
+    - DB=mongodb://db:27017/mongo4
+  db:
+    container_name: mongo4
+    image: mongo
