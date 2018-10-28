@@ -8,7 +8,7 @@ services:
     links:
       - db
     environment:
-    - DB=mongodb://db:27017/mongo4
+    - DB=mongodb://db:27017/mongodb
   db:
-    container_name: mongo4
-    image: mongo
+    container_name: mongodb
+    image: mongo:latest
