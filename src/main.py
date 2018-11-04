@@ -1,6 +1,7 @@
 import os
+import json
 from datetime import datetime
-from flask import Flask
+from flask import Flask, request
 from flask_restful import Api
 from flask_pymongo import PyMongo
 from flask_restful import (Resource, reqparse, fields, marshal)
@@ -14,8 +15,13 @@ hashtag_parser = reqparse.RequestParser()
 hashtag_parser.add_argument("hashtag", required=True)
 
 hashtag_fields = {"_id": fields.String, "name": fields.String,
-                  "user_id": fields.Integer, "date": fields.DateTime,
-                  "uri": fields.Url('hashtag')}
+                  "user_id": fields.String, "created_at": fields.DateTime,
+                  "updated_at": fields.DateTime, "uri": fields.Url('hashtag')}
+
+
+def get_user_id():
+    json_obj = json.loads(request.headers.get('current-user')[17:])
+    return json_obj["user"]["_id"]
 
 
 class HashtagListAPI(Resource):
@@ -28,7 +34,8 @@ class HashtagListAPI(Resource):
             help="No hashtag name provided",
             location="json",
         )
-        self.user_id = 1
+        self.reqparse.add_argument("current-user", required=True,
+                                   help="No user provided", location="headers")
         super(HashtagListAPI, self).__init__()
 
     def get(self):
@@ -39,13 +46,15 @@ class HashtagListAPI(Resource):
 
     def post(self):
         args = self.reqparse.parse_args()
-        hashtag = {"name": args["name"], "user_id": self.user_id,
-                   "date": datetime.now()}
+        user_id = get_user_id()
+        now = datetime.now()
+        hashtag = {"name": args["name"], "user_id": user_id,
+                   "created_at": now, "updated_at": now}
         MONGO.db.hashtags.insert_one(hashtag)
         _last_added = MONGO.db.hashtags.find().sort([("$natural", -1)]).limit(1)
         last_added = [hashtag for hashtag in _last_added]
         return {'hashtag': [marshal(hashtag, hashtag_fields)
-                             for hashtag in last_added]}, 201
+                            for hashtag in last_added]}, 201
 
 
 class HashtagAPI(Resource):
@@ -64,7 +73,8 @@ api = Api(app)
 
 # add api resources
 api.add_resource(HashtagListAPI, "/api/v1.0/hashtags", endpoint="hashtags")
-api.add_resource(HashtagAPI, "/api/v1.0/hashtags/<string:_id>", endpoint="hashtag")
+api.add_resource(HashtagAPI, "/api/v1.0/hashtags/<string:_id>",
+                 endpoint="hashtag")
 
 if __name__ == "__main__":
     app.run(debug=True)
