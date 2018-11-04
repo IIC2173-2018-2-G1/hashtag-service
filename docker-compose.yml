@@ -2,9 +2,10 @@ version: "3.5"
 services:
   app:
     container_name: hashtag-service
+    restart: always
     build: .
     ports:
-      - "5000:5000"
+      - "8085:8085"
     links:
       - db
     environment:
@@ -12,3 +13,5 @@ services:
   db:
     container_name: mongodb
     image: mongo:latest
+    ports:
+      - "27017:27017"
