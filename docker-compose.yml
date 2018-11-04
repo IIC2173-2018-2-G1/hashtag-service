@@ -10,8 +10,8 @@ services:
       - db
     environment:
     - DB=mongodb://db:27017/mongodb
-  db:
-    container_name: mongodb
-    image: mongo:latest
-    ports:
-      - "27017:27017"
+  # db:
+  #   container_name: mongodb
+  #   image: mongo:latest
+  #   ports:
+  #     - "27017:27017"
