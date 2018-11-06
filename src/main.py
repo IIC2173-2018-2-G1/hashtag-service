@@ -72,8 +72,8 @@ class HashtagAPI(Resource):
 api = Api(app)
 
 # add api resources
-api.add_resource(HashtagListAPI, "/api/v1.0/hashtags", endpoint="hashtags")
-api.add_resource(HashtagAPI, "/api/v1.0/hashtags/<string:_id>",
+api.add_resource(HashtagListAPI, "/", endpoint="hashtags")
+api.add_resource(HashtagAPI, "/<string:_id>",
                  endpoint="hashtag")
 
 if __name__ == "__main__":
