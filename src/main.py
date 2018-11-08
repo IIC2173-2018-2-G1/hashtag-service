@@ -20,8 +20,8 @@ hashtag_fields = {"_id": fields.String, "name": fields.String,
 
 
 def get_user_id():
-    json_obj = json.loads(request.headers.get('current-user')[17:])
-    return json_obj["user"]["_id"]
+    json_obj = json.loads(request.headers.get('current-user'))
+    return json_obj["_id"]
 
 
 class HashtagListAPI(Resource):
