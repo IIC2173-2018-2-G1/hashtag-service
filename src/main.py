@@ -51,10 +51,8 @@ class HashtagListAPI(Resource):
         hashtag = {"name": args["name"], "user_id": user_id,
                    "created_at": now, "updated_at": now}
         MONGO.db.hashtags.insert_one(hashtag)
-        _last_added = MONGO.db.hashtags.find().sort([("$natural", -1)]).limit(1)
-        last_added = [hashtag for hashtag in _last_added]
-        return {'hashtag': [marshal(hashtag, hashtag_fields)
-                            for hashtag in last_added]}, 201
+        _last_added = list(MONGO.db.hashtags.find().sort([("$natural", -1)]).limit(1))[0]
+        return {'hashtag': marshal(_last_added, hashtag_fields)}, 201
 
 
 class HashtagAPI(Resource):
