@@ -6,6 +6,7 @@ from flask_restful import Api
 from flask_pymongo import PyMongo
 from flask_restful import (Resource, reqparse, fields, marshal)
 from bson import ObjectId
+from pymongo import UpdateOne
 
 app = Flask(__name__)
 app.config["MONGO_URI"] = os.environ.get("DB")
@@ -14,65 +15,48 @@ MONGO = PyMongo(app)
 hashtag_parser = reqparse.RequestParser()
 hashtag_parser.add_argument("hashtag", required=True)
 
-hashtag_fields = {"_id": fields.String, "name": fields.String,
-                  "user_id": fields.String, "created_at": fields.DateTime,
-                  "updated_at": fields.DateTime, "uri": fields.Url('hashtag')}
+hashtag_fields = {"id": fields.String, "name": fields.String}
 
 
-def get_user_id():
-    json_obj = json.loads(request.headers.get('current-user'))
-    return json_obj["_id"]
+def marshall_hashtag(hashtag):
+    return str(hashtag["name"])
 
 
 class HashtagListAPI(Resource):
     def __init__(self):
         self.reqparse = reqparse.RequestParser()
         self.reqparse.add_argument(
-            "name",
-            type=str,
+            "hashtags",
+            type=list,
             required=True,
-            help="No hashtag name provided",
+            help="No hashtags provided",
             location="json",
         )
-        self.reqparse.add_argument("current-user", required=True,
-                                   help="No user provided", location="headers")
+        self.reqparse.add_argument(
+            "message_id",
+            type=str,
+            required=True,
+            help="No message id provided",
+            location="json",
+        )
         super(HashtagListAPI, self).__init__()
 
     def get(self):
-        _data = MONGO.db.hashtags.find()
-        hashtags = [hashtag for hashtag in _data]
-        return {'hashtags': [marshal(hashtag, hashtag_fields)
-                             for hashtag in hashtags]}
+        hashtags = MONGO.db.hashtags.find().sort("name")
+        return [marshall_hashtag(hashtag) for hashtag in hashtags]
 
     def post(self):
-        args = self.reqparse.parse_args()
-        user_id = get_user_id()
-        now = datetime.now()
-        hashtag = {"name": args["name"], "user_id": user_id,
-                   "created_at": now, "updated_at": now}
-        MONGO.db.hashtags.insert_one(hashtag)
-        _last_added = list(MONGO.db.hashtags.find().sort([("$natural", -1)]).limit(1))[0]
-        return {'hashtag': marshal(_last_added, hashtag_fields)}, 201
-
-
-class HashtagAPI(Resource):
-    def __init__(self):
-        self.reqparse = reqparse.RequestParser()
-        self.reqparse.add_argument('name', type=str, location='json')
-        super(HashtagAPI, self).__init__()
-
-    def get(self, _id):
-        object_id = ObjectId(_id)
-        hashtag = MONGO.db.hashtags.find_one_or_404({"_id": object_id})
-        return {"hashtag": marshal(hashtag, hashtag_fields)}
+        message_id = self.reqparse.parse_args()["message_id"]
+        hashtags = request.json["hashtags"]
+        operations = [UpdateOne({"name": name}, {"$push": {"messages": message_id}}, upsert=True) for name in hashtags]
+        MONGO.db.hashtags.bulk_write(operations)
+        return hashtags, 201
 
 
 api = Api(app)
 
 # add api resources
 api.add_resource(HashtagListAPI, "/", endpoint="hashtags")
-api.add_resource(HashtagAPI, "/<string:_id>",
-                 endpoint="hashtag")
 
 if __name__ == "__main__":
     app.run(debug=True)
