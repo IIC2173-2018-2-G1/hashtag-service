@@ -15,8 +15,6 @@ MONGO = PyMongo(app)
 hashtag_parser = reqparse.RequestParser()
 hashtag_parser.add_argument("hashtag", required=True)
 
-hashtag_fields = {"id": fields.String, "name": fields.String}
-
 
 def marshall_hashtag(hashtag):
     return str(hashtag["name"])
